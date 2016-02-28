@@ -4,7 +4,7 @@ import math
 import cv2
 from time import sleep
 
-def video_playback(path, prev_gray,x,y,w,h):
+def video_playback(path, prev_gray):
     cap4 = cv2.VideoCapture(path)
     j = 0
     while(cap4.isOpened()):
@@ -25,10 +25,10 @@ def video_playback(path, prev_gray,x,y,w,h):
             cap4.release()
             break
         frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
-        frame = frame[y: y+h, x: x+w]
+        #frame = frame[y: y+h, x: x+w]
         #cv2.imshow('To test with', frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.resize(gray, (0,0), fx=0.5, fy=0.5)
+        #gray = cv2.resize(gray, (0,0), fx=0.5, fy=0.5)
         flow = cv2.calcOpticalFlowFarneback(prev_gray,gray,None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
         # Working with the flow matrix
@@ -72,7 +72,7 @@ def sample_video_replay(frame, path):
                 while True:
                     prev_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     prev_gray = cv2.resize(prev_gray, (0,0), fx=0.5, fy=0.5)
-                    video_playback(path, prev_gray,x,y,w,h)
+                    video_playback(path, prev_gray)
                     sleep(1)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         print 'You have quit'
@@ -93,26 +93,34 @@ dot = '.'
 print 'Automatic positioning [a] or manual position (default) [m]'
 positioning = raw_input()
 
-print 'Number of samples:'
-iterations = raw_input()
+#print 'Number of samples:'
+#iterations = raw_input()
+iterations = 1
 
-print 'Number of frames per video:'
-max_frames = raw_input()
+#print 'Number of frames per video:'
+#max_frames = raw_input()
+max_frames = 20
 
-print 'Name of folder to store:'
-folder = raw_input()
+#print 'Name of folder to store:'
+#folder = raw_input()
+folder = 'datasets/waving'
 
-print 'Name your file (without extension):'
-file_name = raw_input()
 
-print 'Name of extension:'
-extension = raw_input()
+#print 'Name your file (without extension):'
+#file_name = raw_input()
+file_name = 'test'
+
+
+#print 'Name of extension:'
+#extension = raw_input()
+extension = 'avi'
+
 print iterations
 
 i = 0
 j = 0
 
-
+'''
 # Take inital frame
 cap2 = cv2.VideoCapture(0)
 if positioning == 'a':
@@ -153,8 +161,7 @@ else:
             print 'You have quit'
             break
 cap2.release()
-
-
+'''
 
 
 # Get all samples
@@ -186,13 +193,14 @@ while True:
         
         ret, frame = cap.read()
 
+        
         if frame == None:
-            print 're. . .'
+            print 'Frame is None'
             continue
         
         out.write(frame)
-        frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
-        frame = frame[y: y+h, x: x+w]
+        #frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
+        #frame = frame[y: y+h, x: x+w]
         cv2.imshow('frame',frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
