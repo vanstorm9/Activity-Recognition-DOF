@@ -23,14 +23,12 @@ from sklearn.linear_model import Ridge
 from sklearn.learning_curve import validation_curve, learning_curve
 from sklearn.externals import joblib
 
-max_frame = 43
-resize_x= 0.4
-resize_y = 0.4
+max_frame = 40
+resize_x= 0.3
+resize_y = 0.3
 # Waving
 # Giving
-# Nodding
-# Shooking
-# Shrugging (I don't know)
+
 
 def pca_calc(main):
     n_components = 90000
@@ -135,9 +133,9 @@ print 'Load datasets [l] from file or create a new one [n]'
 loading = raw_input()
 
 if loading == 'l':
-    #print 'Press [p] to predict test dataset, or else press any key'
-    #predict_start = raw_input()
-    predict_start = ' '
+    print 'Press [p] to predict test dataset, or else press any key'
+    predict_start = raw_input()
+    #predict_start = ' '
 
 if loading=='l':
     # load dataset matrix from npy file
@@ -324,9 +322,10 @@ else:
     print 'Saving model. . .'
     t1 = time()
     joblib.dump(model, 'Optical-Model/optical-model-diverse.pkl')
-
+    predict_start = 'p'
     t3 = time()
     print 'model saving time: ', round(time()-t0, 3), 's'
+    
 print 'Now predicting. . .'
 
 
@@ -381,9 +380,14 @@ if plot_option == 'p':
 
 
 # ---------------------------------
-while True:
-    # Test with another video
+path = 'test.avi'
+cap = cv2.VideoCapture(0)
+cap3 = cv2.VideoCapture(path)
 
+while True:
+    cap4 = cv2.VideoCapture(path)
+    # Test with another video
+    
     while True:
         print 'Press [n] to go into normal mode or [s] to go into sensitive mode'
         sensitive_out = raw_input()
@@ -413,10 +417,10 @@ while True:
     
     # Start video to record the user
     #cap to record user for 15 frames
-    cap = cv2.VideoCapture(0)
+    
 
     # Name of the video file
-    path = 'test.avi'
+    
 
     # Starting video
     
@@ -432,6 +436,10 @@ while True:
     while True:
         ret, frame = cap.read()
 
+        if frame == None:
+            print 'frame is NONE'
+            continue
+
         # Saves frame as full size
         out.write(frame)
         #frame = frame[y: y+h, x: x+w]
@@ -441,6 +449,7 @@ while True:
             print 'You have quit'
             break
         i = i + 1
+        #print i, '&', max_frame
         # End of single sample video, save the video and move to next
         if i > max_frame:
             break
@@ -451,12 +460,12 @@ while True:
         
     # To get a
     # Cap3
-    cap3 = cv2.VideoCapture(path)
+    
     ret, prev_gray = cap3.read()
     prev_gray = cv2.cvtColor(prev_gray,cv2.COLOR_BGR2GRAY)
     prev_gray = cv2.resize(prev_gray, (0,0), fx=resize_x, fy=resize_y)
     #prev_gray = prev_gray[y: y+h, x: x+w]
-    
+
  
     #face = face_classifier.detectMultiScale(prev_gray, 1.2, 4)
 
@@ -464,7 +473,7 @@ while True:
     j = 0
     # To analyze the recording and make an emotion prediction
     
-    cap4 = cv2.VideoCapture(path)
+    
     while(cap4.isOpened()):
         ret, frame = cap4.read()
 
@@ -496,22 +505,44 @@ while True:
             break
         j = j + 1
 
-    
     cv2.destroyAllWindows()
-
+    cap4.release()
     print 'Now predicting. . .'
     
     ### Sliding window ###
     k_start = 0
-    k_end = 15 * flow_mat.shape[0]
+    k_end = max_frame * flow_mat.shape[0]
+    temp_frame = max_frame*7 * flow_mat.shape[0]
+    print k_end, '&', temp_frame
+    print (k_end < temp_frame)
+    if sensitive_out == 's':
+        while k_end < max_frame:
+            print 'enter'
+            count = float(k_end/temp_frame)
+            count = np.around(count, decimals=2)
+            print count, '%'
 
-    max_frame = 50 * flow_mat.shape[0]
-    while k_end < max_frame:
-        count = float(k_end/max_frame)
-        count = np.around(count, decimals=2)
-        print count, '%'
+            
+            model.predict(sub_main[k_start:k_end])
+            
+            prob = model.predict_proba(sub_main[k_start:k_end])
+            prob_s = np.around(prob, decimals=5)
+            prob_s = prob_s* 100
+            # Determine amount of time to predict
+            t1 = time()
+            pred = model.predict(sub_main[k_start:k_end])
 
-        
+
+            if sensitive_out == 's':
+                pred = sensitive_override_check(prob_s, pred)
+
+            if pred != 'Nothing':
+                break
+
+            
+            k_start = k_start + (7 * flow_mat.shape[0])
+            k_end = k_end + (7 * flow_mat.shape[0])
+    else:
         model.predict(sub_main[k_start:k_end])
         
         prob = model.predict_proba(sub_main[k_start:k_end])
@@ -520,18 +551,6 @@ while True:
         # Determine amount of time to predict
         t1 = time()
         pred = model.predict(sub_main[k_start:k_end])
-
-
-        if sensitive_out == 's':
-            pred = sensitive_override_check(prob_s, pred)
-
-        if pred != 'Neutral':
-            break
-
-        
-        k_start = k_start + (7 * flow_mat.shape[0])
-        k_end = k_end + (7 * flow_mat.shape[0])
-
     ######################
 
 
@@ -542,12 +561,12 @@ while True:
     print pred
 
     print 'Probability: '
-    print 'Neutral: ', prob_s[0,1]
+    print 'Nothing: ', prob_s[0,1]
     #print 'Smiling: ', prob_s[0,3]
-    print 'Shocked: ', prob_s[0,2]
-    print 'Angry: ', prob_s[0,0]
+    print 'Waving: ', prob_s[0,2]
+    print 'Giving: ', prob_s[0,0]
 
     #emotion_to_speech(pred)
 cap.release()
 out.release()
-cap4.release()
+
