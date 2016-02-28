@@ -176,8 +176,8 @@ while True:
                 break
 
     prev_gray = main_prev_gray
-    out.release()
-    capf.release()
+    
+    print path
     cap4 = cv2.VideoCapture(path)
 
     j = 0
@@ -185,6 +185,8 @@ while True:
         ret, frame = cap4.read()
 
         if frame == None:
+            cap4.release()
+            cap4 = cv2.VideoCapture(path)
             print 'Frame failure, trying again. . .'
             continue
 
@@ -214,6 +216,10 @@ while True:
     cv2.destroyAllWindows()
     cap4.release()
 
+    k_start = 0
+    k_end = max_frame * flow_mat.shape[0]
+
+    sub_main = np.delete(sub_main,np.s_[:55296],None)
     model.predict(sub_main)
                 
     prob = model.predict_proba(sub_main)
@@ -238,10 +244,11 @@ while True:
     detected = 0
     print ''
     print ''
+    #break
 
 
-
-
+out.release()
+capf.release()
 
 
 
