@@ -24,6 +24,7 @@ from sklearn.externals import joblib
 max_frame = 40
 resize_x= 0.3
 resize_y = 0.3
+main_counter = 0
 
 
 def draw_flow(im,flow,step=16):
@@ -54,12 +55,11 @@ def prev_frame_setup():
 def find_face():
     
     detected = False
-    prev_gray = cv2.cvtColor(frame_f,cv2.COLOR_BGR2GRAY)
+    prev_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
     prev_gray = cv2.resize(prev_gray, (0,0), fx=resize_x, fy=resize_y)
     face = face_classifier.detectMultiScale(prev_gray, 1.2, 4)
 
     if len(face) != 0:
-        print 'Face detected'
         detected = True
 
     return (detected, prev_gray)
@@ -133,16 +133,21 @@ cap3.release()
 capf = cv2.VideoCapture(0)
 sensitive_out = 's'
 
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter(path,fourcc, 20.0, (640,480))
+
 print 'Looking for someone to detect. . .'
+main_counter = 0
 while True:
-    ret, frame_f = capf.read()
+    ret, frame = capf.read()
+    
     detected = False
 
-    if frame_f == None:
+    if frame == None:
         print 'frame is NONE'
         continue
     
-    cv2.imshow('Looking for face. . .', frame_f)
+    cv2.imshow('Looking for face. . .', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         print 'You have quit'
@@ -150,171 +155,94 @@ while True:
 
     detected, prev_gray = find_face()
     
-    #detected, prev_gray = catch_first_frame()
-    #cap4 = cv2.VideoCapture(path)
-    x = 118
-    y = 66
-    w = 116
-    h = 116    
-
-
-    
-    # Start video to record the user
-    #cap to record user for 15 frames
-    
-
-    # Name of the video file
-    
-    if detected:
-        # Starting video
-        cap = cv2.VideoCapture(0)    
-          
-        
-        i = 0
-
-        while True:
-            ret, frame = cap.read()
-
-            if frame == None:
-                print 'frame is NONE'
-                continue
-
-            # Saves frame as full size
-            out.write(frame)
-            #frame = frame[y: y+h, x: x+w]
-            '''
-            cv2.imshow('frame',frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                print 'You have quit'
-                break
-            '''
-            i = i + 1
-            #print i, '&', max_frame
-            # End of single sample video, save the video and move to next
-            if i > max_frame:
-                break
+    if detected == True or main_counter!= 0:
+        if main_counter == 0:
+            print 'Face Detected'
             
-        
-        cv2.destroyAllWindows()
-        
-            
-        # To get a
-        # Cap3
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(path,fourcc, 20.0, (640,480))
+            main_prev_gray = frame
+            main_prev_gray = cv2.cvtColor(main_prev_gray, cv2.COLOR_BGR2GRAY)
+            main_prev_gray = cv2.resize(main_prev_gray, (0,0), fx=resize_x, fy=resize_y)
 
-
-        
-        #prev_gray = prev_gray[y: y+h, x: x+w]
-
-     
-        #face = face_classifier.detectMultiScale(prev_gray, 1.2, 4)
-
-        
-        j = 0
-        # To analyze the recording and make an emotion prediction
-        
-        
-        while(cap4.isOpened()):
-            ret, frame = cap4.read()
-
-            if frame == None:
-                print 'Frame failure, trying again. . .'
-                cap4.release()
-                cap4 = cv2.VideoCapture(path)
-                continue
-
-            if j > max_frame + 1:
-                cap4.release()
-                break
-            frame = cv2.resize(frame, (0,0), fx=resize_x, fy=resize_y)
-            #frame = frame[y: y+h, x: x+w]
-            #cv2.imshow('To test with', frame)
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            flow = cv2.calcOpticalFlowFarneback(prev_gray,gray,None, 0.5, 3, 15, 3, 5, 1.2, 0)
-
-            # Working with the flow matrix
-            flow_mat = flow.flatten()
-            if j == 1:
-                sub_main = flow_mat
-            elif j != 0:
-                sub_main = np.concatenate((sub_main, flow_mat))
-            prev_gray = gray
-            # To show us visually each video
-            cv2.imshow('Optical flow',draw_flow(gray,flow))
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-            j = j + 1
-
-        cv2.destroyAllWindows()
-        cap4.release()
-        print 'Now predicting. . .'
-        
-        ### Sliding window ###
-        k_start = 0
-        k_end = max_frame * flow_mat.shape[0]
-        temp_frame = max_frame*35 * flow_mat.shape[0]
-        print k_end, '&', temp_frame
-        
-        if sensitive_out == 's':
-            while (k_end < temp_frame):
-                print 'enter'
-                count = float(k_end/temp_frame)
-                count = np.around(count, decimals=2)
-                print count, '%'
-
-                
-                model.predict(sub_main[k_start:k_end])
-                
-                prob = model.predict_proba(sub_main[k_start:k_end])
-                prob_s = np.around(prob, decimals=5)
-                prob_s = prob_s* 100
-                # Determine amount of time to predict
-                t1 = time()
-                pred = model.predict(sub_main[k_start:k_end])
-
-
-                if sensitive_out == 's':
-                    pred = sensitive_override_check(prob_s, pred)
-
-                if pred != 'Nothing':
-                    break
-
-                
-                k_start = k_start + (7 * flow_mat.shape[0])
-                k_end = k_end + (7 * flow_mat.shape[0])
-            print (k_end < temp_frame)
         else:
-            model.predict(sub_main[k_start:k_end])
+            print 'i: ', main_counter
+        if frame == None:
+            print 'frame is NONE'
+            continue
+        out.write(frame)
+        main_counter = main_counter + 1
+        if main_counter > max_frame:
+            main_counter = 0
             
-            prob = model.predict_proba(sub_main[k_start:k_end])
-            prob_s = np.around(prob, decimals=5)
-            prob_s = prob_s* 100
-            # Determine amount of time to predict
-            t1 = time()
-            pred = model.predict(sub_main[k_start:k_end])
-        ######################
+            break
 
-
-        print 'predicting time: ', round(time()-t1, 3), 's'
-
-        print ''
-        print 'Prediction: '
-        print pred
-
-        print 'Probability: '
-        print 'Nothing: ', prob_s[0,1]
-        #print 'Smiling: ', prob_s[0,3]
-        print 'Waving: ', prob_s[0,2]
-        print 'Giving: ', prob_s[0,0]
-        detected = 0
-        print ''
-        print ''
-        print 'Looking for someone to detect. . .'
-        #emotion_to_speech(pred)
-cap.release()
+prev_gray = main_prev_gray
 out.release()
 capf.release()
+cap4 = cv2.VideoCapture(path)
+
+j = 0
+while(cap4.isOpened()):
+    ret, frame = cap4.read()
+
+    if frame == None:
+        print 'Frame failure, trying again. . .'
+        continue
+
+    if j > max_frame + 1:
+        break
+    frame = cv2.resize(frame, (0,0), fx=resize_x, fy=resize_y)
+    #frame = frame[y: y+h, x: x+w]
+    #cv2.imshow('To test with', frame)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    flow = cv2.calcOpticalFlowFarneback(prev_gray,gray,None, 0.5, 3, 15, 3, 5, 1.2, 0)
+
+    # Working with the flow matrix
+    flow_mat = flow.flatten()
+    if j == 1:
+        sub_main = flow_mat
+    elif j != 0:
+        sub_main = np.concatenate((sub_main, flow_mat))
+        prev_gray = gray
+        # To show us visually each video
+        cv2.imshow('Optical flow',draw_flow(gray,flow))
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    j = j + 1
+
+
+cv2.destroyAllWindows()
+cap4.release()
+
+model.predict(sub_main)
+            
+prob = model.predict_proba(sub_main)
+prob_s = np.around(prob, decimals=5)
+prob_s = prob_s* 100
+# Determine amount of time to predict
+t1 = time()
+pred = model.predict(sub_main)
+
+
+print 'predicting time: ', round(time()-t1, 3), 's'
+
+print ''
+print 'Prediction: '
+print pred
+
+print 'Probability: '
+print 'Nothing: ', prob_s[0,1]
+#print 'Smiling: ', prob_s[0,3]
+print 'Waving: ', prob_s[0,2]
+print 'Giving: ', prob_s[0,0]
+detected = 0
+print ''
+print ''
+
+
+
+
+
+
 
 
