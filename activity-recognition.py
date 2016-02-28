@@ -24,8 +24,8 @@ from sklearn.learning_curve import validation_curve, learning_curve
 from sklearn.externals import joblib
 
 max_frame = 40
-resize_x= 0.3
-resize_y = 0.3
+resize_x= 0.25
+resize_y = 0.25
 # Waving
 # Giving
 
