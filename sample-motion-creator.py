@@ -12,8 +12,6 @@ def video_playback(path, prev_gray):
 
         if frame == None:
             print 'Frame failure, trying again. . .'
-            cap4.release()
-            cap4 = cv2.VideoCapture(path)
             continue
         
         '''
@@ -21,7 +19,7 @@ def video_playback(path, prev_gray):
             cap4.release()
             break
         '''
-        if j > 17:
+        if j > 50:
             cap4.release()
             break
         frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
@@ -90,81 +88,41 @@ slash = '/'
 underscore = '_'
 dot = '.'
 # Where to position the camera
-print 'Automatic positioning [a] or manual position (default) [m]'
-positioning = raw_input()
+#print 'Automatic positioning [a] or manual position (default) [m]'
+#positioning = raw_input()
+positioning = 'm'
 
 #print 'Number of samples:'
 #iterations = raw_input()
-iterations = 1
+iterations = 30
 
 #print 'Number of frames per video:'
 #max_frames = raw_input()
-max_frames = 20
+max_frames = 50
 
 #print 'Name of folder to store:'
 #folder = raw_input()
-folder = 'datasets/waving'
+folder = 'datasets/giving'
 
 
 #print 'Name your file (without extension):'
 #file_name = raw_input()
-file_name = 'test'
+file_name = 'give_0'
 
 
 #print 'Name of extension:'
 #extension = raw_input()
 extension = 'avi'
 
+print folder
 print iterations
 
 i = 0
 j = 0
 
-'''
-# Take inital frame
-cap2 = cv2.VideoCapture(0)
-if positioning == 'a':
-    while True:
-        ret_f, frame_f = cap2.read()
-        face_classifier = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_default.xml')
-        face = face_classifier.detectMultiScale(frame_f, 1.2, 4)
-
-        if len(face) == 0:
-            print "No face detected"
-            print 'Press any key to try again'
-            wait = raw_input()
-            continue
-        else:
-            for (x,y,w,h) in face:
-                frame_f = frame_f[y: y+h, x: x+w]
-                break
-            break
-    
-    cv2.imshow('First Frame', frame_f)
-    cv2.waitKey(0)
-else:
-    # Manually setting x, y, w, h values in order make more consistant test
-    # and training videos
-    x = 118
-    y = 66
-    w = 116
-    h = 116    
-
-    print 'Position your face until you can see it in the video box'
-    print 'After that, press [q] to continue'
-    while True:
-        ret_f, frame_f = cap2.read()
-        frame_f = cv2.resize(frame_f, (0,0), fx=0.5, fy=0.5)
-        frame_f = frame_f[y: y+h, x: x+w]
-        cv2.imshow('frame',frame_f)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            print 'You have quit'
-            break
-cap2.release()
-'''
-
 
 # Get all samples
+cap = cv2.VideoCapture(0)
 while True:
     # Get user prepared
     print 'Press any key to record the next video'
@@ -174,7 +132,7 @@ while True:
     
     
     # Start video
-    cap = cv2.VideoCapture(0)
+    
     print 'i: ',i
     i_char = str(i)
 
@@ -193,7 +151,7 @@ while True:
         
         ret, frame = cap.read()
 
-        
+        #if ret == False:
         if frame == None:
             print 'Frame is None'
             continue
@@ -215,8 +173,7 @@ while True:
         j = j + 1
 
 
-    cap.release()
-    out.release()
+    
     
 
     # View replay of video
@@ -236,33 +193,7 @@ while True:
     
     if i >= int(iterations):
         break
-    
-    
+cap.release()
+out.release()
 
-    
-    '''
-    cv2.imshow('Video', old_frame)
-    if cv2.waitKey(1) & 0xFF==ord('q'):
-        break
-    
-    old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
-    face = face_classifier.detectMultiScale(old_frame, 1.2, 4)
-
-    if len(face) == 0:
-        print "This is empty"
-        continue
-    else: 
-        print 'Detected'
-        for (x,y,w,h) in face:
-            #focused_face = old_frame[y: y+h, x: x+w]
-            focused_face = old_gray[y: y+h, x: x+w]
-            #cv2.rectangle(old_frame, (x,y), (x+w, y+h), (0,255,0),2)
-
-        #cv2.imshow('Detected_Frame', focused_face)
-        #cv2.waitKey(0)
-        i_char = str(i)
-        path = folder + slash + file_name + underscore + i_char + dot + extension
-        cv2.imwrite(path,focused_face)
-        i = i + 1
-    '''
 print 'Finished!'

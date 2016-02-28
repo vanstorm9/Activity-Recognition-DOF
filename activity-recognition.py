@@ -23,6 +23,13 @@ from sklearn.linear_model import Ridge
 from sklearn.learning_curve import validation_curve, learning_curve
 from sklearn.externals import joblib
 
+
+# Waving
+# Giving
+# Nodding
+# Shooking
+# Shrugging (I don't know)
+
 def pca_calc(main):
     n_components = 90000
     print '----------------------'
