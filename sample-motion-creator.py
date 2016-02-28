@@ -100,14 +100,14 @@ iterations = 30
 #max_frames = raw_input()
 max_frames = 50
 
-#print 'Name of folder to store:'
-#folder = raw_input()
-folder = 'datasets/giving'
+print 'Name of folder to store:'
+folder = raw_input()
+#folder = 'datasets/giving'
 
 
-#print 'Name your file (without extension):'
-#file_name = raw_input()
-file_name = 'give_0'
+print 'Name your file (without extension):'
+file_name = raw_input()
+#file_name = 'give_0'
 
 
 #print 'Name of extension:'

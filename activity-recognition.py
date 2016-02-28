@@ -23,7 +23,9 @@ from sklearn.linear_model import Ridge
 from sklearn.learning_curve import validation_curve, learning_curve
 from sklearn.externals import joblib
 
-
+max_frame = 43
+resize_x= 0.4
+resize_y = 0.4
 # Waving
 # Giving
 # Nodding
@@ -55,10 +57,19 @@ def draw_flow(im,flow,step=16):
         cv2.circle(vis,(x1,y1),1,(0,255,0), -1)
     return vis
 
+def prev_frame_setup():
+    
+    ret, frame_f = capf.read()
+    prev_gray = cv2.cvtColor(frame_f,cv2.COLOR_BGR2GRAY)
+    prev_gray = cv2.resize(prev_gray, (0,0), fx=resize_x, fy=resize_y)
+
+    capf.release()
+    return prev_gray
+
 def catch_first_frame():
     ret, frame_f = capf.read()
     prev_gray = cv2.cvtColor(frame_f,cv2.COLOR_BGR2GRAY)
-    prev_gray = cv2.resize(prev_gray, (0,0), fx=0.5, fy=0.5)
+    prev_gray = cv2.resize(prev_gray, (0,0), fx=resize_x, fy=resize_y)
     face = face_classifier.detectMultiScale(prev_gray, 1.2, 4)
 
     if len(face) == 0:
@@ -72,7 +83,7 @@ def catch_first_frame():
     return (x,y,w,h, prev_gray)
 
 def sensitive_override_check(prob_s, pred):
-    if pred == 'Neutral':
+    if pred == 'nothing':
         override_arr = [prob_s[0,3], prob_s[0,2], prob_s[0,0]]
         max_comp = max(override_arr)
 
@@ -84,9 +95,9 @@ def sensitive_override_check(prob_s, pred):
 
         if qualified_override:
             if max_ind == 0:
-                pred = 'Smiling'
+                pred = 'waving'
             elif max_ind == 1:
-                pred = 'Shocked'
+                pred = 'giving'
             else:
                 pred = 'Angry'
 
@@ -154,22 +165,10 @@ else:
         choice = raw_input()
 
         if choice == 'd':
-            # Insert some stuff
-            print 'Emotion [e] or Nodding [n] dataset?'
-            type_of = raw_input()
 
-            if type_of == 'e':
-                folder_trans = np.array(['datasets/Generic-Emotion-Classifier/Neutral','datasets/Generic-Emotion-Classifier/Smile','datasets/Generic-Emotion-Classifier/Shocked','datasets/Generic-Emotion-Classifier/Angry'])
-                label_trans = np.array(['Neutral','Smiling','Shocked','Angry'])
-                #first_vid = 'anthony-6-10-15_0.avi'
-                first_vid = 'anthony-6-27-15_0.avi'
-            else:
-                folder_trans = np.array(['datasets/Nodding','datasets/Shaking'])
-                label_trans = np.array(['Yes (nodding head)','No (shaking head)'])
-                first_vid = 'anthony-6-8-15_0.avi'
-            #folder_trans = np.array(['datasets/Smiling-Motion','datasets/Surprised-Motion'])
-            #label_trans = np.array(['Smiling','Shocked'])
-            
+            folder_trans = np.array(['datasets/waving','datasets/giving', 'datasets/nothing'])
+            label_trans = np.array(['Waving','Giving', 'Nothing'])
+            first_vid = 'wave_0_0.avi'     
             
             break
         elif choice == 'c':
@@ -197,6 +196,7 @@ else:
     # Detect the first frame of video
     face_classifier = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_default.xml')
 
+   
     # First frame of first video only
     if choice == 'd':
         folder = folder_trans[0]
@@ -204,8 +204,11 @@ else:
     else:
         capf = cv2.VideoCapture(folder + slash + first_vid)
     print 'Capf: ',capf.isOpened()
-    x, y, w, h, prev_gray = catch_first_frame()
+    prev_gray = prev_frame_setup()
+    
+  
 
+    
     num_files = len([f for f in os.listdir(folder)
                     if os.path.isfile(os.path.join(folder, f))])
     print num_files
@@ -248,11 +251,11 @@ else:
                     cap.release()
                     break
                 '''
-                if j > 15:
+                if j > max_frame:
                     cap.release()
                     break
-                frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
-                frame = frame[y: y+h, x: x+w]
+                frame = cv2.resize(frame, (0,0), fx=resize_x, fy=resize_y)
+                #frame = frame[y: y+h, x: x+w]
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 flow = cv2.calcOpticalFlowFarneback(prev_gray,gray,None, 0.5, 3, 15, 3, 5, 1.2, 0)
                 
@@ -390,7 +393,7 @@ while True:
     
     # Get user into photo position
     # Cap2 to view positon video
-    cap2 = cv2.VideoCapture(0)
+
     
     # Manually setting x, y, w, h values in order make more consistant test
     # and training videos
@@ -405,24 +408,7 @@ while True:
     y = 66
     w = 116
     h = 116    
-    print 'Position your face until you can see it in the video box'
-    print 'After that, press [q] to continue'
-    response = ''
-    while True:
-        ret_f, frame_f = cap2.read()
-        frame_f = cv2.resize(frame_f, (0,0), fx=0.5, fy=0.5)
-        frame_f = frame_f[y: y+h, x: x+w]
-        cv2.imshow('frame',frame_f)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            print 'You have ended positioning phase'
-            break
-    
-    prev_gray = frame_f.copy()
-    prev_gray = cv2.cvtColor(prev_gray, cv2.COLOR_BGR2GRAY)
-
-
-    cap2.release()
 
     
     # Start video to record the user
@@ -439,8 +425,8 @@ while True:
 
     print 'Press any key to start recording'
     go = raw_input()
-    
-    max_frame = 36
+
+
     i = 0
     # get each frame per video
     while True:
@@ -448,7 +434,7 @@ while True:
 
         # Saves frame as full size
         out.write(frame)
-        frame = frame[y: y+h, x: x+w]
+        #frame = frame[y: y+h, x: x+w]
         cv2.imshow('frame',frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -459,8 +445,7 @@ while True:
         if i > max_frame:
             break
         
-    cap.release()
-    out.release()
+    
     cv2.destroyAllWindows()
     
         
@@ -469,18 +454,17 @@ while True:
     cap3 = cv2.VideoCapture(path)
     ret, prev_gray = cap3.read()
     prev_gray = cv2.cvtColor(prev_gray,cv2.COLOR_BGR2GRAY)
-    prev_gray = cv2.resize(prev_gray, (0,0), fx=0.5, fy=0.5)
-    prev_gray = prev_gray[y: y+h, x: x+w]
+    prev_gray = cv2.resize(prev_gray, (0,0), fx=resize_x, fy=resize_y)
+    #prev_gray = prev_gray[y: y+h, x: x+w]
     
  
-    face = face_classifier.detectMultiScale(prev_gray, 1.2, 4)
+    #face = face_classifier.detectMultiScale(prev_gray, 1.2, 4)
 
     
     j = 0
     # To analyze the recording and make an emotion prediction
     
     cap4 = cv2.VideoCapture(path)
-    max_frame = 36
     while(cap4.isOpened()):
         ret, frame = cap4.read()
 
@@ -493,8 +477,8 @@ while True:
         if j > max_frame + 1:
             cap4.release()
             break
-        frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
-        frame = frame[y: y+h, x: x+w]
+        frame = cv2.resize(frame, (0,0), fx=resize_x, fy=resize_y)
+        #frame = frame[y: y+h, x: x+w]
         #cv2.imshow('To test with', frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         flow = cv2.calcOpticalFlowFarneback(prev_gray,gray,None, 0.5, 3, 15, 3, 5, 1.2, 0)
@@ -512,7 +496,7 @@ while True:
             break
         j = j + 1
 
-    cap4.release()
+    
     cv2.destroyAllWindows()
 
     print 'Now predicting. . .'
@@ -521,7 +505,7 @@ while True:
     k_start = 0
     k_end = 15 * flow_mat.shape[0]
 
-    max_frame = 36 * flow_mat.shape[0]
+    max_frame = 50 * flow_mat.shape[0]
     while k_end < max_frame:
         count = float(k_end/max_frame)
         count = np.around(count, decimals=2)
@@ -559,8 +543,11 @@ while True:
 
     print 'Probability: '
     print 'Neutral: ', prob_s[0,1]
-    print 'Smiling: ', prob_s[0,3]
+    #print 'Smiling: ', prob_s[0,3]
     print 'Shocked: ', prob_s[0,2]
     print 'Angry: ', prob_s[0,0]
 
-    emotion_to_speech(pred)
+    #emotion_to_speech(pred)
+cap.release()
+out.release()
+cap4.release()
